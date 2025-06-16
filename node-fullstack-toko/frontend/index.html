@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD Barang & Supplier</title>
+</head>
+<body>
+  <h1>Manajemen Barang</h1>
+  <form id="barangForm">
+    <input type="text" id="nama" placeholder="Nama Barang" required>
+    <input type="number" id="harga_beli" placeholder="Harga Beli" required>
+    <input type="number" id="harga_jual" placeholder="Harga Jual" required>
+    <input type="text" id="jenis_barang" placeholder="Jenis Barang" required>
+    <input type="number" id="stok" placeholder="Stok" required>
+    <input type="text" id="deskripsi" placeholder="Deskripsi" required>
+    <button type="submit">Simpan</button>
+  </form>
+
+  <ul id="baranglist"></ul>
+
+  <h1>Manajemen Supplier</h1>
+  <form id="supplierForm">
+    <input type="text" id="nama_supplier" placeholder="Nama Supplier" required>
+    <input type="text" id="alamat" placeholder="Alamat" required>
+    <input type="number" id="kode_pos" placeholder="Kode Pos" required>
+    <input type="text" id="nama_barang" placeholder="Nama Barang" required>
+    <button type="submit">Simpan</button>
+  </form>
+
+  <ul id="supplierlist"></ul>
+
+  <h1>Manajemen Pembelian</h1>
+<form id="pembelianForm">
+  <input type="text" id="nama_pembelian" placeholder="Nama Barang" required>
+  <input type="number" id="stok_pembelian" placeholder="Stok" required>
+  <input type="text" id="nama_supplier_pembelian" placeholder="Nama Supplier" required>
+  <input type="datetime-local" id="tanggal_pembelian" required>
+  <button type="submit">Simpan</button>
+</form>
+
+<ul id="pembelianlist"></ul>
+
+<h1>Manajemen Penjualan</h1>
+<form id="penjualanForm">
+  <input type="text" id="nama_penjualan" placeholder="Nama Barang" required>
+  <input type="number" id="stok_penjualan" placeholder="Stok Terjual" required>
+  <input type="datetime-local" id="tanggal_penjualan" required>
+  <button type="submit">Simpan</button>
+</form>
+
+<ul id="penjualanlist"></ul>
+
+
+
+  <script>
+    // === BARANG ===
+    const apiBarang = 'http://localhost:3000/api/barang';
+    let idEdit = null;
+
+    async function loadBarang() {
+      const res = await fetch(apiBarang);
+      const data = await res.json();
+      const list = document.getElementById('baranglist');
+      list.innerHTML = '';
+      data.forEach(barang => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          ${barang.nama} - Rp${barang.harga_jual} - Stok: ${barang.stok}
+          <button onclick="hapusBarang('${barang._id}')">Hapus</button>
+          <button onclick='editBarang(${JSON.stringify(barang)})'>Edit</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function tambahAtauEditBarang(e) {
+      e.preventDefault();
+      const nama = document.getElementById('nama').value;
+      const harga_beli = document.getElementById('harga_beli').value;
+      const harga_jual = document.getElementById('harga_jual').value;
+      const jenis_barang = document.getElementById('jenis_barang').value;
+      const stok = document.getElementById('stok').value;
+      const deskripsi = document.getElementById('deskripsi').value;
+
+      const data = { nama, harga_beli, harga_jual, jenis_barang, stok, deskripsi };
+
+      if (idEdit) {
+        await fetch(`${apiBarang}/${idEdit}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        idEdit = null;
+      } else {
+        await fetch(apiBarang, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      document.getElementById('barangForm').reset();
+      loadBarang();
+    }
+
+    async function hapusBarang(id) {
+      await fetch(`${apiBarang}/${id}`, { method: 'DELETE' });
+      loadBarang();
+    }
+
+    function editBarang(barang) {
+      document.getElementById('nama').value = barang.nama;
+      document.getElementById('harga_beli').value = barang.harga_beli;
+      document.getElementById('harga_jual').value = barang.harga_jual;
+      document.getElementById('jenis_barang').value = barang.jenis_barang;
+      document.getElementById('stok').value = barang.stok;
+      document.getElementById('deskripsi').value = barang.deskripsi;
+      idEdit = barang._id;
+    }
+
+    document.getElementById('barangForm').addEventListener('submit', tambahAtauEditBarang);
+    loadBarang();
+
+    // === SUPPLIER ===
+    const apiSupplier = 'http://localhost:3000/api/supplier';
+    let idSupplierEdit = null;
+
+    async function loadSupplier() {
+      const res = await fetch(apiSupplier);
+      const data = await res.json();
+      const list = document.getElementById('supplierlist');
+      list.innerHTML = '';
+      data.forEach(supplier => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          ${supplier.nama_supplier} (${supplier.nama}) - ${supplier.alamat}, ${supplier.kode_pos}
+          <button onclick="hapusSupplier('${supplier._id}')">Hapus</button>
+          <button onclick='editSupplier(${JSON.stringify(supplier)})'>Edit</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function tambahAtauEditSupplier(e) {
+      e.preventDefault();
+      const nama_supplier = document.getElementById('nama_supplier').value;
+      const alamat = document.getElementById('alamat').value;
+      const kode_pos = document.getElementById('kode_pos').value;
+      const nama = document.getElementById('nama_barang').value;
+
+      const data = { nama_supplier, alamat, kode_pos, nama };
+
+      if (idSupplierEdit) {
+        await fetch(`${apiSupplier}/${idSupplierEdit}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        idSupplierEdit = null;
+      } else {
+        await fetch(apiSupplier, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      document.getElementById('supplierForm').reset();
+      loadSupplier();
+    }
+
+    async function hapusSupplier(id) {
+      await fetch(`${apiSupplier}/${id}`, { method: 'DELETE' });
+      loadSupplier();
+    }
+
+    function editSupplier(supplier) {
+      document.getElementById('nama_supplier').value = supplier.nama_supplier;
+      document.getElementById('alamat').value = supplier.alamat;
+      document.getElementById('kode_pos').value = supplier.kode_pos;
+      document.getElementById('nama_barang').value = supplier.nama;
+      idSupplierEdit = supplier._id;
+    }
+
+    document.getElementById('supplierForm').addEventListener('submit', tambahAtauEditSupplier);
+    loadSupplier();
+
+    // === PEMBELIAN ===
+const apiPembelian = 'http://localhost:3000/api/pembelian';
+let idPembelianEdit = null;
+
+async function loadPembelian() {
+  const res = await fetch(apiPembelian);
+  const data = await res.json();
+  const list = document.getElementById('pembelianlist');
+  list.innerHTML = '';
+  data.forEach(p => {
+    const li = document.createElement('li');
+    const tanggal = new Date(p.tanggal_pembelian).toLocaleString();
+    li.innerHTML = `
+      ${p.nama} - ${p.nama_supplier} - Stok: ${p.stok} - Tanggal: ${tanggal}
+      <button onclick="hapusPembelian('${p._id}')">Hapus</button>
+      <button onclick='editPembelian(${JSON.stringify(p)})'>Edit</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+async function tambahAtauEditPembelian(e) {
+  e.preventDefault();
+  const nama = document.getElementById('nama_pembelian').value;
+  const stok = document.getElementById('stok_pembelian').value;
+  const nama_supplier = document.getElementById('nama_supplier_pembelian').value;
+  const tanggal_pembelian = document.getElementById('tanggal_pembelian').value;
+
+  const data = { nama, stok, nama_supplier, tanggal_pembelian };
+
+  if (idPembelianEdit) {
+    await fetch(`${apiPembelian}/${idPembelianEdit}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    idPembelianEdit = null;
+  } else {
+    await fetch(apiPembelian, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+
+  document.getElementById('pembelianForm').reset();
+  loadPembelian();
+}
+
+async function hapusPembelian(id) {
+  await fetch(`${apiPembelian}/${id}`, { method: 'DELETE' });
+  loadPembelian();
+}
+
+function editPembelian(p) {
+  document.getElementById('nama_pembelian').value = p.nama;
+  document.getElementById('stok_pembelian').value = p.stok;
+  document.getElementById('nama_supplier_pembelian').value = p.nama_supplier;
+  document.getElementById('tanggal_pembelian').value = p.tanggal_pembelian.slice(0, 16); // format untuk datetime-local
+  idPembelianEdit = p._id;
+}
+
+document.getElementById('pembelianForm').addEventListener('submit', tambahAtauEditPembelian);
+loadPembelian();
+
+// === PENJUALAN ===
+const apiPenjualan = 'http://localhost:3000/api/penjualan';
+let idPenjualanEdit = null;
+
+async function loadPenjualan() {
+  const res = await fetch(apiPenjualan);
+  const data = await res.json();
+  const list = document.getElementById('penjualanlist');
+  list.innerHTML = '';
+  data.forEach(p => {
+    const tanggal = new Date(p.tanggal_penjualan).toLocaleString();
+    li = document.createElement('li');
+    li.innerHTML = `
+      ${p.nama} - Stok Terjual: ${p.stok} - Tanggal: ${tanggal}
+      <button onclick="hapusPenjualan('${p._id}')">Hapus</button>
+      <button onclick='editPenjualan(${JSON.stringify(p)})'>Edit</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+async function tambahAtauEditPenjualan(e) {
+  e.preventDefault();
+  const nama = document.getElementById('nama_penjualan').value;
+  const stok = document.getElementById('stok_penjualan').value;
+  const tanggal_penjualan = document.getElementById('tanggal_penjualan').value;
+
+  const data = { nama, stok, tanggal_penjualan };
+
+  if (idPenjualanEdit) {
+    await fetch(`${apiPenjualan}/${idPenjualanEdit}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    idPenjualanEdit = null;
+  } else {
+    await fetch(apiPenjualan, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+
+  document.getElementById('penjualanForm').reset();
+  loadPenjualan();
+}
+
+async function hapusPenjualan(id) {
+  await fetch(`${apiPenjualan}/${id}`, { method: 'DELETE' });
+  loadPenjualan();
+}
+
+function editPenjualan(p) {
+  document.getElementById('nama_penjualan').value = p.nama;
+  document.getElementById('stok_penjualan').value = p.stok;
+  document.getElementById('tanggal_penjualan').value = p.tanggal_penjualan.slice(0, 16);
+  idPenjualanEdit = p._id;
+}
+
+document.getElementById('penjualanForm').addEventListener('submit', tambahAtauEditPenjualan);
+loadPenjualan();
+
+  </script>
+</body>
+</html>
