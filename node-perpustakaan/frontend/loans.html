@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD Peminjaman</title>
+</head>
+<body>
+  <h1>CRUD Peminjaman Buku</h1>
+
+  <form id="loanForm">
+    <input type="hidden" id="editing_id" />
+
+    <label for="book_id">Buku:</label>
+    <select id="book_id" name="book_id" required></select>
+
+    <label for="user_id">Pengguna:</label>
+    <select id="user_id" name="user_id" required></select>
+
+    <label for="loan_date">Tanggal Pinjam:</label>
+    <input type="date" id="loan_date" name="loan_date" required />
+
+    <label for="due_date">Tanggal Kembali:</label>
+    <input type="date" id="due_date" name="due_date" required />
+
+    <button type="submit">Simpan</button>
+  </form>
+
+  <hr>
+  <h2>Daftar Peminjaman</h2>
+  <ul id="loanlist"></ul>
+
+  <script>
+    const API = {
+      books: 'http://localhost:3000/api/Books',
+      users: 'http://localhost:3000/api/Users',
+      loans: 'http://localhost:3000/api/Loans',
+    };
+
+    async function loadDropdowns() {
+      // Load Buku
+      const booksRes = await fetch(API.books);
+      const books = await booksRes.json();
+      const bookSelect = document.getElementById('book_id');
+      bookSelect.innerHTML = '<option value="">Pilih Buku</option>';
+      books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book._id;
+        option.textContent = `${book.title} - ${book.author}`;
+        bookSelect.appendChild(option);
+      });
+
+      // Load Pengguna
+      const usersRes = await fetch(API.users);
+      const users = await usersRes.json();
+      const userSelect = document.getElementById('user_id');
+      userSelect.innerHTML = '<option value="">Pilih Pengguna</option>';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user._id;
+        option.textContent = user.name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    async function loadLoans() {
+      const res = await fetch(API.loans);
+      const loans = await res.json();
+      const list = document.getElementById('loanlist');
+      list.innerHTML = '';
+
+      loans.forEach(loan => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          📚 <b>${loan.book_id?.title || 'N/A'}</b> oleh <i>${loan.user_id?.name || 'N/A'}</i><br>
+          📅 ${new Date(loan.loan_date).toLocaleDateString()} ➜ ${new Date(loan.due_date).toLocaleDateString()}
+          <br>
+          <button onclick="editLoan('${loan._id}')">Edit</button>
+          <button onclick="deleteLoan('${loan._id}')">Hapus</button>
+          <hr>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function deleteLoan(id) {
+      if (!confirm('Yakin mau hapus peminjaman ini?')) return;
+      await fetch(`${API.loans}/${id}`, { method: 'DELETE' });
+      loadLoans();
+    }
+
+    async function editLoan(id) {
+      const res = await fetch(`${API.loans}/${id}`);
+      const loan = await res.json();
+
+      document.getElementById('editing_id').value = loan._id;
+      document.getElementById('book_id').value = loan.book_id?._id || '';
+      document.getElementById('user_id').value = loan.user_id?._id || '';
+      document.getElementById('loan_date').value = loan.loan_date.split('T')[0];
+      document.getElementById('due_date').value = loan.due_date.split('T')[0];
+    }
+
+    // Simpan atau Update data
+    document.getElementById('loanForm').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const editingId = document.getElementById('editing_id').value;
+      const data = {
+        book_id: document.getElementById('book_id').value,
+        user_id: document.getElementById('user_id').value,
+        loan_date: document.getElementById('loan_date').value,
+        due_date: document.getElementById('due_date').value,
+      };
+
+      if (editingId) {
+        // UPDATE
+        await fetch(`${API.loans}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Data peminjaman berhasil diperbarui!');
+      } else {
+        // CREATE
+        await fetch(API.loans, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Peminjaman berhasil ditambahkan!');
+      }
+
+      document.getElementById('loanForm').reset();
+      document.getElementById('editing_id').value = '';
+      loadLoans();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDropdowns();
+      loadLoans();
+    });
+  </script>
+</body>
+</html>

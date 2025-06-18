@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Peminjaman</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f8;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #1e293b;
+      color: white;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #3b82f6;
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      grid-column: span 2;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+
+    li div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    li div span {
+      flex: 1;
+    }
+
+    li button {
+      margin-left: 10px;
+      margin-top: 10px;
+    }
+
+    hr {
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <ul>
+      <li><a href="user.html">Users</a></li>
+      <li><a href="books.html">Books</a></li>
+      <li><a href="#" class="active">Loans</a></li>
+      <li><a href="author.html">Authors</a></li>
+      <li><a href="fines.html">Fines</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h1>CRUD Peminjaman Buku</h1>
+
+    <form id="loanForm">
+      <input type="hidden" id="editing_id" />
+
+      <label for="book_id">Buku:</label>
+      <select id="book_id" name="book_id" required></select>
+
+      <label for="user_id">Pengguna:</label>
+      <select id="user_id" name="user_id" required></select>
+
+      <label for="loan_date">Tanggal Pinjam:</label>
+      <input type="date" id="loan_date" name="loan_date" required />
+
+      <label for="due_date">Tanggal Kembali:</label>
+      <input type="date" id="due_date" name="due_date" required />
+
+      <button type="submit">Simpan</button>
+    </form>
+
+    <h2>Daftar Peminjaman</h2>
+    <ul id="loanlist"></ul>
+  </div>
+
+  <script>
+    const API = {
+      books: 'http://localhost:3000/api/Books',
+      users: 'http://localhost:3000/api/Users',
+      loans: 'http://localhost:3000/api/Loans',
+    };
+
+    async function loadDropdowns() {
+      const booksRes = await fetch(API.books);
+      const books = await booksRes.json();
+      const bookSelect = document.getElementById('book_id');
+      bookSelect.innerHTML = '<option value="">Pilih Buku</option>';
+      books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book._id;
+        option.textContent = `${book.title} - ${book.author}`;
+        bookSelect.appendChild(option);
+      });
+
+      const usersRes = await fetch(API.users);
+      const users = await usersRes.json();
+      const userSelect = document.getElementById('user_id');
+      userSelect.innerHTML = '<option value="">Pilih Pengguna</option>';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user._id;
+        option.textContent = user.name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    async function loadLoans() {
+      const res = await fetch(API.loans);
+      const loans = await res.json();
+      const list = document.getElementById('loanlist');
+      list.innerHTML = '';
+
+      loans.forEach(loan => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div>
+            <span>
+              📚 <strong>${loan.book_id?.title || 'N/A'}</strong> oleh <em>${loan.user_id?.name || 'N/A'}</em><br>
+              📅 ${new Date(loan.loan_date).toLocaleDateString()} ➜ ${new Date(loan.due_date).toLocaleDateString()}
+            </span>
+            <div>
+              <button onclick="editLoan('${loan._id}')">Edit</button>
+              <button onclick="deleteLoan('${loan._id}')">Hapus</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function deleteLoan(id) {
+      if (!confirm('Yakin mau hapus peminjaman ini?')) return;
+      await fetch(`${API.loans}/${id}`, { method: 'DELETE' });
+      loadLoans();
+    }
+
+    async function editLoan(id) {
+      const res = await fetch(`${API.loans}/${id}`);
+      const loan = await res.json();
+
+      document.getElementById('editing_id').value = loan._id;
+      document.getElementById('book_id').value = loan.book_id?._id || '';
+      document.getElementById('user_id').value = loan.user_id?._id || '';
+      document.getElementById('loan_date').value = loan.loan_date.split('T')[0];
+      document.getElementById('due_date').value = loan.due_date.split('T')[0];
+    }
+
+    document.getElementById('loanForm').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const editingId = document.getElementById('editing_id').value;
+      const data = {
+        book_id: document.getElementById('book_id').value,
+        user_id: document.getElementById('user_id').value,
+        loan_date: document.getElementById('loan_date').value,
+        due_date: document.getElementById('due_date').value,
+      };
+
+      if (editingId) {
+        await fetch(`${API.loans}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Data peminjaman berhasil diperbarui!');
+      } else {
+        await fetch(API.loans, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Peminjaman berhasil ditambahkan!');
+      }
+
+      document.getElementById('loanForm').reset();
+      document.getElementById('editing_id').value = '';
+      loadLoans();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDropdowns();
+      loadLoans();
+    });
+  </script>
+</body>
+</html>

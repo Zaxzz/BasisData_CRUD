@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Fines</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f8;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #1e293b;
+      color: white;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #3b82f6;
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      grid-column: span 2;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li span {
+      flex: 1;
+    }
+
+    li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <ul>
+      <li><a href="user.html">Users</a></li>
+      <li><a href="book.html">Books</a></li>
+      <li><a href="loan.html">Loans</a></li>
+      <li><a href="author.html">Authors</a></li>
+      <li><a href="#" class="active">Fines</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h1>CRUD Denda Peminjaman</h1>
+
+    <form id="fineForm">
+      <input type="hidden" id="edit_id">
+
+      <label for="loan_id">Peminjaman:</label>
+      <select id="loan_id" required></select>
+
+      <label for="user_id">Pengguna:</label>
+      <select id="user_id" required></select>
+
+      <label for="amount">Jumlah Denda:</label>
+      <input type="number" id="amount" required>
+
+      <label for="reason">Alasan:</label>
+      <input type="text" id="reason" required>
+
+      <button type="submit">Simpan</button>
+      <button type="button" onclick="document.getElementById('fineForm').reset(); document.getElementById('edit_id').value=''">Reset</button>
+    </form>
+
+    <h2>List Denda</h2>
+    <ul id="fineList"></ul>
+  </div>
+
+  <script>
+    const API = {
+      fines: 'http://localhost:3000/api/Fines',
+      users: 'http://localhost:3000/api/Users',
+      loans: 'http://localhost:3000/api/Loans',
+    };
+
+    async function loadDropdowns() {
+      const loans = await fetch(API.loans).then(res => res.json());
+      const loanSelect = document.getElementById('loan_id');
+      loanSelect.innerHTML = '<option value="">Pilih Peminjaman</option>';
+      loans.forEach(loan => {
+        const option = document.createElement('option');
+        option.value = loan._id;
+        option.textContent = `${loan.book_id?.title || 'Judul tidak ditemukan'}`;
+        loanSelect.appendChild(option);
+      });
+
+      const users = await fetch(API.users).then(res => res.json());
+      const userSelect = document.getElementById('user_id');
+      userSelect.innerHTML = '<option value="">Pilih Pengguna</option>';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user._id;
+        option.textContent = user.name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    async function loadFines() {
+      const data = await fetch(API.fines).then(res => res.json());
+      const list = document.getElementById('fineList');
+      list.innerHTML = '';
+      data.forEach(fine => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span><strong>${fine.user_id?.name || '[Pengguna]'}</strong> - Denda: Rp${fine.amount} - Alasan: ${fine.reason}</span>
+          <div>
+            <button onclick="editFine('${fine._id}')">Edit</button>
+            <button onclick="deleteFine('${fine._id}')">Hapus</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('fineForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fineData = {
+        loan_id: document.getElementById('loan_id').value,
+        user_id: document.getElementById('user_id').value,
+        amount: parseFloat(document.getElementById('amount').value),
+        reason: document.getElementById('reason').value,
+      };
+
+      const id = document.getElementById('edit_id').value;
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `${API.fines}/${id}` : API.fines;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fineData),
+      });
+
+      if (res.ok) {
+        alert(`Denda berhasil di${id ? 'ubah' : 'tambahkan'}!`);
+        document.getElementById('fineForm').reset();
+        document.getElementById('edit_id').value = '';
+        loadFines();
+      } else {
+        const err = await res.json();
+        alert('Gagal: ' + err.error);
+      }
+    });
+
+    async function deleteFine(id) {
+      if (!confirm('Yakin hapus denda ini?')) return;
+      const res = await fetch(`${API.fines}/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('Denda dihapus');
+        loadFines();
+      }
+    }
+
+    async function editFine(id) {
+      const fine = await fetch(`${API.fines}/${id}`).then(res => res.json());
+      document.getElementById('edit_id').value = fine._id;
+      document.getElementById('loan_id').value = fine.loan_id?._id || fine.loan_id;
+      document.getElementById('user_id').value = fine.user_id?._id || fine.user_id;
+      document.getElementById('amount').value = fine.amount;
+      document.getElementById('reason').value = fine.reason;
+      window.scrollTo(0, 0);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDropdowns();
+      loadFines();
+    });
+  </script>
+</body>
+</html>

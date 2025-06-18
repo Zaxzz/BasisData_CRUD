@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Authors</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f8;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #1e293b;
+      color: white;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #3b82f6;
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1, h2 {
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      grid-column: span 2;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li span {
+      flex: 1;
+    }
+
+    li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <ul>
+      <li><a href="user.html">Users</a></li>
+      <li><a href="book.html">Books</a></li>
+      <li><a href="loan.html">Loans</a></li>
+      <li><a href="author.html" class="active">Authors</a></li>
+      <li><a href="fine.html">Fines</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h1>CRUD Data Penulis</h1>
+
+    <form id="authorForm">
+      <input type="hidden" id="editing_id" />
+
+      <label for="book_id">Buku:</label>
+      <select id="book_id" required></select>
+
+      <label for="name">Nama Penulis:</label>
+      <input type="text" id="name" required />
+
+      <label for="birth_year">Tahun Lahir:</label>
+      <input type="number" id="birth_year" required />
+
+      <button type="submit">Simpan</button>
+      <button type="button" onclick="resetForm()">Reset</button>
+    </form>
+
+    <h2>List Penulis</h2>
+    <ul id="authorList"></ul>
+  </div>
+
+  <script>
+    const API = {
+      authors: 'http://localhost:3000/api/Authors',
+      books: 'http://localhost:3000/api/Books',
+    };
+
+    async function loadBooks() {
+      const res = await fetch(API.books);
+      const books = await res.json();
+      const select = document.getElementById('book_id');
+      select.innerHTML = '<option value="">Pilih Buku</option>';
+      books.forEach(book => {
+        const opt = document.createElement('option');
+        opt.value = book._id;
+        opt.textContent = `${book.title} - ${book.author}`;
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadAuthors() {
+      const res = await fetch(API.authors);
+      const authors = await res.json();
+      const list = document.getElementById('authorList');
+      list.innerHTML = '';
+
+      authors.forEach(author => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span><strong>${author.name}</strong> (lahir ${author.birth_year}) - <em>${author.book_id?.title || 'N/A'}</em></span>
+          <div>
+            <button onclick="editAuthor('${author._id}')">Edit</button>
+            <button onclick="deleteAuthor('${author._id}')">Hapus</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function deleteAuthor(id) {
+      if (confirm('Yakin ingin menghapus penulis ini?')) {
+        await fetch(`${API.authors}/${id}`, { method: 'DELETE' });
+        loadAuthors();
+      }
+    }
+
+    async function editAuthor(id) {
+      const res = await fetch(`${API.authors}/${id}`);
+      const author = await res.json();
+      document.getElementById('editing_id').value = author._id;
+      document.getElementById('book_id').value = author.book_id?._id || '';
+      document.getElementById('name').value = author.name;
+      document.getElementById('birth_year').value = author.birth_year;
+    }
+
+    function resetForm() {
+      document.getElementById('authorForm').reset();
+      document.getElementById('editing_id').value = '';
+    }
+
+    document.getElementById('authorForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const editingId = document.getElementById('editing_id').value;
+
+      const data = {
+        book_id: document.getElementById('book_id').value,
+        name: document.getElementById('name').value,
+        birth_year: document.getElementById('birth_year').value,
+      };
+
+      if (editingId) {
+        await fetch(`${API.authors}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        alert('Penulis berhasil diperbarui!');
+      } else {
+        await fetch(API.authors, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        alert('Penulis berhasil ditambahkan!');
+      }
+
+      resetForm();
+      loadAuthors();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBooks();
+      loadAuthors();
+    });
+  </script>
+</body>
+</html>

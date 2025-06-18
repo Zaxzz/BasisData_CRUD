@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRUD Buku</title>
+</head>
+<body>
+  <h1>CRUD Data Buku</h1>
+
+  <form id="bookForm">
+    <input type="hidden" id="book_id" />
+    
+    <label for="title">Judul:</label>
+    <input type="text" id="title" required />
+
+    <label for="author">Penulis:</label>
+    <input type="text" id="author" required />
+
+    <label for="genre">Genre:</label>
+    <input type="text" id="genre" required />
+
+    <label for="publication_year">Tahun Terbit:</label>
+    <input type="number" id="publication_year" required />
+
+    <button type="submit">Simpan</button>
+    <button type="button" onclick="resetForm()">Reset</button>
+  </form>
+
+  <hr>
+  <ul id="bookList"></ul>
+
+  <script>
+    const API = 'http://localhost:3000/api/Books';
+
+    async function loadBooks() {
+      const res = await fetch(API);
+      const data = await res.json();
+      const list = document.getElementById('bookList');
+      list.innerHTML = '';
+
+      data.forEach(book => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${book.title}</strong> oleh ${book.author} (${book.genre}, ${book.publication_year})
+          <button onclick="editBook('${book._id}', '${book.title}', '${book.author}', '${book.genre}', '${book.publication_year}')">Edit</button>
+          <button onclick="deleteBook('${book._id}')">Hapus</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function deleteBook(id) {
+      if (confirm('Yakin ingin menghapus buku ini?')) {
+        await fetch(`${API}/${id}`, { method: 'DELETE' });
+        loadBooks();
+      }
+    }
+
+    function editBook(id, title, author, genre, year) {
+      document.getElementById('book_id').value = id;
+      document.getElementById('title').value = title;
+      document.getElementById('author').value = author;
+      document.getElementById('genre').value = genre;
+      document.getElementById('publication_year').value = year;
+    }
+
+    function resetForm() {
+      document.getElementById('bookForm').reset();
+      document.getElementById('book_id').value = '';
+    }
+
+    document.getElementById('bookForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('book_id').value;
+      const data = {
+        title: document.getElementById('title').value,
+        author: document.getElementById('author').value,
+        genre: document.getElementById('genre').value,
+        publication_year: document.getElementById('publication_year').value,
+      };
+
+      if (id) {
+        // Update
+        await fetch(`${API}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Buku berhasil diperbarui!');
+      } else {
+        // Create
+        await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        alert('Buku berhasil ditambahkan!');
+      }
+
+      resetForm();
+      loadBooks();
+    });
+
+    // Load data pertama kali
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBooks();
+    });
+  </script>
+</body>
+</html>

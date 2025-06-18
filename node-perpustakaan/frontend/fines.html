@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD Denda</title>
+</head>
+<body>
+  <h1>CRUD Denda Peminjaman</h1>
+
+  <form id="fineForm">
+    <input type="hidden" id="edit_id">
+
+    <label for="loan_id">Peminjaman:</label>
+    <select id="loan_id" required></select>
+
+    <label for="user_id">Pengguna:</label>
+    <select id="user_id" required></select>
+
+    <label for="amount">Jumlah Denda:</label>
+    <input type="number" id="amount" required>
+
+    <label for="reason">Alasan:</label>
+    <input type="text" id="reason" required>
+
+    <button type="submit">Simpan</button>
+  </form>
+
+  <hr>
+  <ul id="fineList"></ul>
+
+  <script>
+    const API = {
+      fines: 'http://localhost:3000/api/Fines',
+      users: 'http://localhost:3000/api/Users',
+      loans: 'http://localhost:3000/api/Loans',
+    };
+
+    async function loadDropdowns() {
+      // Load Loans
+      const loans = await fetch(API.loans).then(res => res.json());
+      const loanSelect = document.getElementById('loan_id');
+      loanSelect.innerHTML = '<option value="">Pilih Peminjaman</option>';
+      loans.forEach(loan => {
+        const option = document.createElement('option');
+        option.value = loan._id;
+        option.textContent = `${loan.book_id?.title || 'Judul tidak ditemukan'}`;
+        loanSelect.appendChild(option);
+      });
+
+      // Load Users
+      const users = await fetch(API.users).then(res => res.json());
+      const userSelect = document.getElementById('user_id');
+      userSelect.innerHTML = '<option value="">Pilih Pengguna</option>';
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user._id;
+        option.textContent = user.name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    async function loadFines() {
+      const data = await fetch(API.fines).then(res => res.json());
+      const list = document.getElementById('fineList');
+      list.innerHTML = '';
+      data.forEach(fine => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${fine.user_id?.name || '[Pengguna]'}</strong> - 
+          Denda: Rp${fine.amount} - 
+          Alasan: ${fine.reason} 
+          <button onclick="editFine('${fine._id}')">Edit</button>
+          <button onclick="deleteFine('${fine._id}')">Hapus</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('fineForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fineData = {
+        loan_id: document.getElementById('loan_id').value,
+        user_id: document.getElementById('user_id').value,
+        amount: parseFloat(document.getElementById('amount').value),
+        reason: document.getElementById('reason').value,
+      };
+
+      const id = document.getElementById('edit_id').value;
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `${API.fines}/${id}` : API.fines;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fineData),
+      });
+
+      if (res.ok) {
+        alert(`Denda berhasil di${id ? 'ubah' : 'tambahkan'}!`);
+        document.getElementById('fineForm').reset();
+        document.getElementById('edit_id').value = '';
+        loadFines();
+      } else {
+        const err = await res.json();
+        alert('Gagal: ' + err.error);
+      }
+    });
+
+    async function deleteFine(id) {
+      if (!confirm('Yakin hapus denda ini?')) return;
+      const res = await fetch(`${API.fines}/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('Denda dihapus');
+        loadFines();
+      }
+    }
+
+    async function editFine(id) {
+      const fine = await fetch(`${API.fines}/${id}`).then(res => res.json());
+      document.getElementById('edit_id').value = fine._id;
+      document.getElementById('loan_id').value = fine.loan_id?._id || fine.loan_id;
+      document.getElementById('user_id').value = fine.user_id?._id || fine.user_id;
+      document.getElementById('amount').value = fine.amount;
+      document.getElementById('reason').value = fine.reason;
+      window.scrollTo(0, 0);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDropdowns();
+      loadFines();
+    });
+  </script>
+</body>
+</html>

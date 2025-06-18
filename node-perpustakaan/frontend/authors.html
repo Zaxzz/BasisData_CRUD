@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD Author</title>
+</head>
+<body>
+  <h1>CRUD Penulis (Author)</h1>
+
+  <form id="authorForm">
+    <input type="hidden" id="editing_id" />
+
+    <label for="book_id">Buku:</label>
+    <select id="book_id" name="book_id" required></select>
+
+    <label for="name">Nama Penulis:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="birth_year">Tahun Lahir:</label>
+    <input type="number" id="birth_year" name="birth_year" required>
+
+    <button type="submit">Simpan</button>
+  </form>
+
+  <hr>
+  <h2>Daftar Penulis</h2>
+  <ul id="authorList"></ul>
+
+  <script>
+    const API = {
+      authors: 'http://localhost:3000/api/Authors',
+      books: 'http://localhost:3000/api/Books',
+    };
+
+    // Load dropdown buku
+    async function loadBooks() {
+      const res = await fetch(API.books);
+      const books = await res.json();
+      const select = document.getElementById('book_id');
+      select.innerHTML = '<option value="">Pilih Buku</option>';
+      books.forEach(book => {
+        const opt = document.createElement('option');
+        opt.value = book._id;
+        opt.textContent = `${book.title} - ${book.author}`;
+        select.appendChild(opt);
+      });
+    }
+
+    // Load semua author
+    async function loadAuthors() {
+      const res = await fetch(API.authors);
+      const authors = await res.json();
+      const list = document.getElementById('authorList');
+      list.innerHTML = '';
+
+      authors.forEach(author => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          📖 <b>${author.name}</b> (lahir ${author.birth_year}) - <i>${author.book_id?.title || 'N/A'}</i><br>
+          <button onclick="editAuthor('${author._id}')">Edit</button>
+          <button onclick="deleteAuthor('${author._id}')">Hapus</button>
+          <hr>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    // Delete author
+    async function deleteAuthor(id) {
+      if (!confirm('Yakin mau hapus penulis ini?')) return;
+      await fetch(`${API.authors}/${id}`, { method: 'DELETE' });
+      loadAuthors();
+    }
+
+    // Edit author
+    async function editAuthor(id) {
+      const res = await fetch(`${API.authors}/${id}`);
+      const author = await res.json();
+      document.getElementById('editing_id').value = author._id;
+      document.getElementById('book_id').value = author.book_id?._id || '';
+      document.getElementById('name').value = author.name;
+      document.getElementById('birth_year').value = author.birth_year;
+    }
+
+    // Form submit: create or update
+    document.getElementById('authorForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const editingId = document.getElementById('editing_id').value;
+
+      const data = {
+        book_id: document.getElementById('book_id').value,
+        name: document.getElementById('name').value,
+        birth_year: document.getElementById('birth_year').value,
+      };
+
+      if (editingId) {
+        await fetch(`${API.authors}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        alert('Penulis berhasil diperbarui!');
+      } else {
+        await fetch(API.authors, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        alert('Penulis berhasil ditambahkan!');
+      }
+
+      document.getElementById('authorForm').reset();
+      document.getElementById('editing_id').value = '';
+      loadAuthors();
+    });
+
+    // Saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBooks();
+      loadAuthors();
+    });
+  </script>
+</body>
+</html>

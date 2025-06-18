@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Users</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f8;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #1e293b;
+      color: white;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar a {
+      color: rgb(0, 0, 0);
+      text-decoration: none;
+      display: block;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #3b82f6;
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li span {
+      flex: 1;
+    }
+
+    li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Dashboard</h2>
+    <ul>
+      <li><a href="#" class="active">Users</a></li>
+      <li><a href="book.html">Books</a></li>
+      <li><a href="loan.html">Loans</a></li>
+      <li><a href="author.html">Authors</a></li>
+      <li><a href="fine.html">Fines</a></li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <h1>CRUD User</h1>
+
+    <form id="user-form">
+      <input type="hidden" id="userId" />
+      <input type="text" id="name" placeholder="Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="text" id="phone" placeholder="Phone" required />
+      <input type="text" id="address" placeholder="Address" required />
+      <button type="submit">Submit</button>
+    </form>
+
+    <h2>List Users</h2>
+    <ul id="user-list"></ul>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/Users';
+
+    const form = document.getElementById('user-form');
+    const list = document.getElementById('user-list');
+    const name = document.getElementById('name');
+    const email = document.getElementById('email');
+    const phone = document.getElementById('phone');
+    const address = document.getElementById('address');
+    const userId = document.getElementById('userId');
+
+    const loadUsers = async () => {
+      const res = await fetch(API_URL);
+      const users = await res.json();
+      list.innerHTML = '';
+      users.forEach(user => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span><strong>${user.name}</strong> | ${user.email} | ${user.phone} | ${user.address}</span>
+          <div>
+            <button onclick="editUser('${user._id}')">Edit</button>
+            <button onclick="deleteUser('${user._id}')">Delete</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    };
+
+    const editUser = async (id) => {
+      const res = await fetch(`${API_URL}/${id}`);
+      const user = await res.json();
+      userId.value = user._id;
+      name.value = user.name;
+      email.value = user.email;
+      phone.value = user.phone;
+      address.value = user.address;
+    };
+
+    const deleteUser = async (id) => {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      loadUsers();
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        name: name.value,
+        email: email.value,
+        phone: phone.value,
+        address: address.value
+      };
+
+      if (userId.value) {
+        await fetch(`${API_URL}/${userId.value}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      form.reset();
+      userId.value = '';
+      loadUsers();
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>
