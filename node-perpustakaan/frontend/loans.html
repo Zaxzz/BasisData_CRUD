@@ -45,7 +45,7 @@
       books.forEach(book => {
         const option = document.createElement('option');
         option.value = book._id;
-        option.textContent = `${book.title} - ${book.author}`;
+        option.textContent = `${book.title}`;
         bookSelect.appendChild(option);
       });
 
@@ -71,7 +71,7 @@
       loans.forEach(loan => {
         const li = document.createElement('li');
         li.innerHTML = `
-          📚 <b>${loan.book_id?.title || 'N/A'}</b> oleh <i>${loan.user_id?.name || 'N/A'}</i><br>
+          📚 <b>${loan.book_id?.title || 'N/A'}</b> dipinjam <i>${loan.user_id?.name || 'N/A'}</i><br>
           📅 ${new Date(loan.loan_date).toLocaleDateString()} ➜ ${new Date(loan.due_date).toLocaleDateString()}
           <br>
           <button onclick="editLoan('${loan._id}')">Edit</button>

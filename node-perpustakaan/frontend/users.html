@@ -19,76 +19,80 @@
   <h2>List Users</h2>
   <ul id="user-list"></ul>
 
-  <script>
-    const API_URL = 'http://localhost:3000/api/Users';
+<script>
+  const API_URL = 'http://localhost:3000/api/Users';
 
-    const form = document.getElementById('user-form');
-    const list = document.getElementById('user-list');
-    const name = document.getElementById('name');
-    const email = document.getElementById('email');
-    const phone = document.getElementById('phone');
-    const address = document.getElementById('address');
-    const userId = document.getElementById('userId');
+  const form = document.getElementById('user-form');
+  const list = document.getElementById('user-list');
+  const name = document.getElementById('name');
+  const email = document.getElementById('email');
+  const phone = document.getElementById('phone');
+  const address = document.getElementById('address');
+  const userId = document.getElementById('userId');
 
-    const loadUsers = async () => {
-      const res = await fetch(API_URL);
-      const users = await res.json();
-      list.innerHTML = '';
-      users.forEach(user => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <strong>${user.name}</strong> | ${user.email} | ${user.phone} | ${user.address}
-          <button onclick="editUser('${user._id}')">Edit</button>
-          <button onclick="deleteUser('${user._id}')">Delete</button>
-        `;
-        list.appendChild(li);
-      });
-    };
-
-    const editUser = async (id) => {
-      const res = await fetch(`${API_URL}/${id}`);
-      const user = await res.json();
-      userId.value = user._id;
-      name.value = user.name;
-      email.value = user.email;
-      phone.value = user.phone;
-      address.value = user.address;
-    };
-
-    const deleteUser = async (id) => {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      loadUsers();
-    };
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const data = {
-        name: name.value,
-        email: email.value,
-        phone: phone.value,
-        address: address.value
-      };
-
-      if (userId.value) {
-        await fetch(`${API_URL}/${userId.value}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      } else {
-        await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      }
-
-      form.reset();
-      userId.value = '';
-      loadUsers();
+  const loadUsers = async () => {
+    const res = await fetch(API_URL);
+    const users = await res.json();
+    list.innerHTML = '';
+    users.forEach(user => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>${user.name}</strong> | ${user.email} | ${user.phone} | ${user.address}
+        <button onclick="editUser('${user._id}')">Edit</button>
+        <button onclick="deleteUser('${user._id}')">Delete</button>
+      `;
+      list.appendChild(li);
     });
+  };
 
+  const editUser = async (id) => {
+    const res = await fetch(`${API_URL}/${id}`);
+    const user = await res.json();
+    userId.value = user._id;
+    name.value = user.name;
+    email.value = user.email;
+    phone.value = user.phone;
+    address.value = user.address;
+  };
+
+  const deleteUser = async (id) => {
+    const confirmDelete = window.confirm('Yakin ingin menghapus user ini?');
+    if (!confirmDelete) return;
+
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
     loadUsers();
-  </script>
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      name: name.value,
+      email: email.value,
+      phone: phone.value,
+      address: address.value
+    };
+
+    if (userId.value) {
+      await fetch(`${API_URL}/${userId.value}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } else {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+
+    form.reset();
+    userId.value = '';
+    loadUsers();
+  });
+
+  loadUsers();
+</script>
+
 </body>
 </html>

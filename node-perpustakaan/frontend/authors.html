@@ -41,7 +41,7 @@
       books.forEach(book => {
         const opt = document.createElement('option');
         opt.value = book._id;
-        opt.textContent = `${book.title} - ${book.author}`;
+        opt.textContent = `${book.title}`;
         select.appendChild(opt);
       });
     }

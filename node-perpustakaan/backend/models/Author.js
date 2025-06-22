@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const authorSchema = new mongoose.Schema({
   book_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Book', // asumsi kamu punya model Book
+    ref: 'Book', 
     required: true
   },
   name: {

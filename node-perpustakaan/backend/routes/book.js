@@ -6,7 +6,8 @@ const Book = require('../models/Book');
 // CREATE - Tambah buku baru
 router.post('/', async (req, res) => {
   try {
-    const book = new Book(req.body);
+    const { title, genre, publication_year } = req.body;
+    const book = new Book({ title, genre, publication_year });
     await book.save();
     res.status(201).json(book);
   } catch (err) {
@@ -38,7 +39,12 @@ router.get('/:id', async (req, res) => {
 // UPDATE - Ubah data buku berdasarkan ID
 router.put('/:id', async (req, res) => {
   try {
-    const updatedBook = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { title, genre, publication_year } = req.body;
+    const updatedBook = await Book.findByIdAndUpdate(
+      req.params.id,
+      { title, genre, publication_year },
+      { new: true }
+    );
     res.json(updatedBook);
   } catch (err) {
     res.status(400).json({ error: err.message });

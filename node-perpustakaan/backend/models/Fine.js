@@ -4,12 +4,12 @@ const mongoose = require('mongoose');
 const fineSchema = new mongoose.Schema({
   loan_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Loan', // asumsi kamu punya model Loan
+    ref: 'Loan', 
     required: true
   },
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // relasi ke User
+    ref: 'User', 
     required: true
   },
   amount: {

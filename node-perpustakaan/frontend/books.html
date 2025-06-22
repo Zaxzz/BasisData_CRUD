@@ -13,9 +13,6 @@
     <label for="title">Judul:</label>
     <input type="text" id="title" required />
 
-    <label for="author">Penulis:</label>
-    <input type="text" id="author" required />
-
     <label for="genre">Genre:</label>
     <input type="text" id="genre" required />
 
@@ -41,8 +38,8 @@
       data.forEach(book => {
         const li = document.createElement('li');
         li.innerHTML = `
-          <strong>${book.title}</strong> oleh ${book.author} (${book.genre}, ${book.publication_year})
-          <button onclick="editBook('${book._id}', '${book.title}', '${book.author}', '${book.genre}', '${book.publication_year}')">Edit</button>
+          <strong>${book.title}</strong> (${book.genre}, ${book.publication_year})
+          <button onclick="editBook('${book._id}', '${book.title}', '${book.genre}', '${book.publication_year}')">Edit</button>
           <button onclick="deleteBook('${book._id}')">Hapus</button>
         `;
         list.appendChild(li);
@@ -56,10 +53,9 @@
       }
     }
 
-    function editBook(id, title, author, genre, year) {
+    function editBook(id, title, genre, year) {
       document.getElementById('book_id').value = id;
       document.getElementById('title').value = title;
-      document.getElementById('author').value = author;
       document.getElementById('genre').value = genre;
       document.getElementById('publication_year').value = year;
     }
@@ -74,7 +70,6 @@
       const id = document.getElementById('book_id').value;
       const data = {
         title: document.getElementById('title').value,
-        author: document.getElementById('author').value,
         genre: document.getElementById('genre').value,
         publication_year: document.getElementById('publication_year').value,
       };
