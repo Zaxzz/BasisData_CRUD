@@ -1,4 +1,5 @@
 // backend/server.js
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,11 +10,14 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Koneksi ke MongoDB
-mongoose.connect('mongodb://localhost:27017/perpustakaan', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
+mongoose.connect(process.env.MONGODB_URI,
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  }
+).then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
+
 
 // Import routes
 const userRoutes = require('./routes/user');
@@ -28,6 +32,10 @@ app.use('/api/books', bookRoutes);
 app.use('/api/authors', authorRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/fines', fineRoutes);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 // Jalankan server
 const PORT = 3000;
